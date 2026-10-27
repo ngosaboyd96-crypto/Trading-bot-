@@ -17,3 +17,4 @@ gevent-websocket>=0.10.1
 
 # Quantitative & Time utilities
 pytz>=2024.1
+packaging>=23.0
