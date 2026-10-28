@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+from gevent import monkey
+monkey.patch_all
+
+()#!/usr/bin/env python3
 """
 ================================================================================
 Quantitative Trading Bot Backend Server — MNQ Calendar Mean-Reversion
