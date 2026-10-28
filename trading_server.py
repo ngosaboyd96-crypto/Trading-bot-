@@ -88,13 +88,41 @@ class DerivBroker:
     def authenticate(self) -> bool:
         ws = self._get_connection()
         if not ws:
+            logger.error("Failed to create WebSocket connection to Deriv.")
             return False
         try:
-            ws.send(json.dumps({"authorize": self.token}))
-            resp = json.loads(ws.recv())
+            auth_payload = {"authorize": self.token}
+            logger.info("Sending authorization payload to Deriv...")
+            ws.send(json.dumps(auth_payload))
+            raw_resp = ws.recv()
+            logger.info("Received raw Deriv auth response: %s", raw_resp)
+            resp = json.loads(raw_resp)
+            
             if resp.get("error"):
+                logger.error("Deriv Authorization Error: %s", resp.get("error"))
                 ws.close()
                 return False
+
+            auth_data = resp.get("authorize", {})
+            with self._lock:
+                self.is_authorized = True
+                self.account_info = {
+                    "loginid": auth_data.get("loginid", "CR_UNKNOWN"),
+                    "balance": float(auth_data.get("balance", 10000.0)),
+                    "currency": auth_data.get("currency", "USD"),
+                    "is_virtual": bool(auth_data.get("is_virtual", 1)),
+                    "email": auth_data.get("email", ""),
+                }
+            logger.info("✓ Deriv Authenticated! Account: %s | Balance: %s", self.account_info["loginid"], self.account_info["balance"])
+            ws.close()
+            return True
+        except Exception as e:
+            logger.error("Exception during Deriv authentication: %s", str(e))
+            try:
+                ws.close()
+            except Exception:
+                pass
+            return False
 
             auth_data = resp.get("authorize", {})
             with self._lock:
