@@ -42,10 +42,8 @@ DEBUG_MODE = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
 TICK_INTERVAL_SECONDS = int(os.getenv("TICK_INTERVAL_SECONDS", "60"))
 TRADING_MODE = os.getenv("TRADING_MODE", "paper")
 
-DERIV_API_TOKEN = os.getenv(
-    "DERIV_API_TOKEN",
-    "pat_2bc5ea25c6752936c6e28773f4f59a4093cddf8985785f8703989c4c29943fed",
-)
+DERIV_API_TOKEN = "pat_2bc5ea25c6752936c6e28773f4f59a4093cddf8985785f8703989c4c29943fed"
+
 DERIV_APP_ID = int(os.getenv("DERIV_APP_ID", "1089"))
 DERIV_WS_URL = os.getenv("DERIV_WS_URL", f"wss://ws.derivws.com/websockets/v3?app_id={DERIV_APP_ID}")
 DERIV_SYMBOL = os.getenv("DERIV_SYMBOL", "OTC_NDX")
