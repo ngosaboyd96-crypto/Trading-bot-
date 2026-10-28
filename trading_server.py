@@ -178,3 +178,60 @@ class DerivBroker:
         return {"success": True, "contract_id": contract_id, "status": "closed"}
 
 deriv_broker = DerivBroker(token=DERIV_API_TOKEN, app_id=DERIV_APP_ID)
+# ==============================================================================
+# Flask Routing & Background Strategy Engine
+# ==============================================================================
+
+@app.route("/", methods=["GET"])
+def health_check():
+    """Health check endpoint for Render uptime monitors."""
+    return jsonify({
+        "status": "healthy",
+        "service": "MNQ Calendar Mean-Reversion Trading Bot",
+        "trading_mode": TRADING_MODE,
+        "broker_summary": deriv_broker.get_account_summary(),
+        "utc_time": datetime.now(timezone.utc).isoformat()
+    }), 200
+
+
+@app.route("/api/status", methods=["GET"])
+def get_status():
+    """Detailed telemetry endpoint for strategy status and broker connection."""
+    return jsonify({
+        "status": "online",
+        "mode": TRADING_MODE,
+        "symbol": DERIV_SYMBOL,
+        "order_stake": ORDER_STAKE_USD,
+        "account": deriv_broker.get_account_summary(),
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }), 200
+
+
+def background_trading_worker():
+    """Background loop executing strategy telemetry and scheduled checks."""
+    logger.info("Starting background trading worker thread...")
+    while True:
+        try:
+            now_utc = datetime.now(timezone.utc)
+            current_weekday = now_utc.weekday() # 0 = Monday, 2 = Wednesday
+            current_hour = now_utc.hour
+
+            # Strategy rule: Long-only entry Monday 18:00 UTC, exit Wednesday 10:00 UTC
+            if current_weekday == 0 and current_hour >= 18:
+                logger.info("Strategy window active: Monday entry conditions checked.")
+            elif current_weekday == 2 and current_hour <= 10:
+                logger.info("Strategy window active: Wednesday exit conditions checked.")
+
+        except Exception as e:
+            logger.error("Error in background trading worker: %s", str(e))
+        
+        time.sleep(TICK_INTERVAL_SECONDS)
+
+
+if __name__ == "__main__":
+    # Start background thread for local execution (Gevent handles workers on Render)
+    worker_thread = threading.Thread(target=background_trading_worker, daemon=True)
+    worker_thread.start()
+    
+    logger.info("Starting Flask server on %s:%d (Debug: %s)", SERVER_HOST, SERVER_PORT, DEBUG_MODE)
+    app.run(host=SERVER_HOST, port=SERVER_PORT, debug=DEBUG_MODE)
